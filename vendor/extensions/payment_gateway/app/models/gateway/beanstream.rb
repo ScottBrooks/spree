@@ -1,48 +1,48 @@
 class Gateway::Beanstream < Gateway
-	preference :login, :string
-	preference :user, :string
-	preference :password, :string
-	preference :secure_profile_api_key, :string
-	
+  preference :login, :string
+  preference :user, :string
+  preference :password, :string
+  preference :secure_profile_api_key, :string
+
   def provider_class
     ActiveMerchant::Billing::BeanstreamGateway
-  end	
-	
-	SECURE_PROFILE_URL = 'https://www.beanstream.com/scripts/payment_profile.asp'
+  end
+
+  SECURE_PROFILE_URL = 'https://www.beanstream.com/scripts/payment_profile.asp'
   SP_SERVICE_VERSION = '1.1'
   PROFILE_OPERATIONS = {:new => 'N', :modify => 'M'}
-	
-	ActiveMerchant::Billing::BeanstreamGateway.class_eval do
-		
-	  def store(credit_card, options = {})
-	    post = {}        
-	    add_address(post, options)
-	    add_credit_card(post, credit_card)      
-	    add_secure_profile_variables(post,options)
-	    commit(post, true)
-	  end
 
-	  #can't actually delete a secure profile with the supplicaed API. This function sets the status of the profile to closed (C).
-	  #Closed profiles will have to removed manually.
-	  def delete(vault_id)
-	    update(vault_id, false, {:status => "C"})
-	  end
+  ActiveMerchant::Billing::BeanstreamGateway.class_eval do
 
-	  #alias_method :unstore, :delete
+    def store(credit_card, options = {})
+      post = {}
+      add_address(post, options)
+      add_credit_card(post, credit_card)
+      add_secure_profile_variables(post,options)
+      commit(post, true)
+    end
 
-	  # Update the values (such as CC expiration) stored at
-	  # the gateway.  The CC number must be supplied in the
-	  # CreditCard object.
-	  def update(vault_id, credit_card, options = {})
-	    post = {}
-	    add_address(post, options)
-	    add_credit_card(post, credit_card)
-	    options.merge!({:vault_id => vault_id, :operation => secure_profile_action(:modify)})
-	    add_secure_profile_variables(post,options)
-	    commit(post, true)
-	  end
+    #can't actually delete a secure profile with the supplicaed API. This function sets the status of the profile to closed (C).
+    #Closed profiles will have to removed manually.
+    def delete(vault_id)
+      update(vault_id, false, {:status => "C"})
+    end
 
-		# CORE #
+    #alias_method :unstore, :delete
+
+    # Update the values (such as CC expiration) stored at
+    # the gateway.  The CC number must be supplied in the
+    # CreditCard object.
+    def update(vault_id, credit_card, options = {})
+      post = {}
+      add_address(post, options)
+      add_credit_card(post, credit_card)
+      options.merge!({:vault_id => vault_id, :operation => secure_profile_action(:modify)})
+      add_secure_profile_variables(post,options)
+      commit(post, true)
+    end
+
+    # CORE #
 
     def secure_profile_action(type)
       PROFILE_OPERATIONS[type] || PROFILE_OPERATIONS[:new]
@@ -102,19 +102,19 @@ class Gateway::Beanstream < Gateway
     def post_data(params, use_profile_api)
       params[:requestType] = 'BACKEND'
       if use_profile_api
-        params[:merchantId] = @options[:login] 
+        params[:merchantId] = @options[:login]
         params[:passCode] = @options[:secure_profile_api_key]
       else
         params[:username] = @options[:user] if @options[:user]
         params[:password] = @options[:password] if @options[:password]
-        params[:merchant_id] = @options[:login]     
+        params[:merchant_id] = @options[:login]
       end
       params[:vbvEnabled] = '0'
       params[:scEnabled] = '0'
 
       params.reject{|k, v| v.blank?}.collect { |key, value| "#{key}=#{CGI.escape(value.to_s)}" }.join("&")
-    end			
-	
-	end
+    end
+
+  end
 
 end
